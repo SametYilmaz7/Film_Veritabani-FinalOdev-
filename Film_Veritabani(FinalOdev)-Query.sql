@@ -1,8 +1,8 @@
-create database Film_Veritabani;
+ï»¿create database Film_Veritabani;
 
 use Film_Veritabani
 
--------------------------------------------Tablo oluþturma--------------------------------------------
+-------------------------------------------Tablo olusturma--------------------------------------------
 
 CREATE TABLE Filmler
 (
@@ -60,7 +60,7 @@ PRIMARY KEY CLUSTERED
 );
 
 
------------------------------Foreign Key iþlemleri----------------------------------------------------
+-----------------------------Foreign Key islemleri----------------------------------------------------
 
 
 ALTER TABLE Film_Turler
@@ -117,7 +117,7 @@ execute sp_filmyonetmengetir
 
 
 
--------------------------------------------Index kýsmý----------------------------------------------------
+-------------------------------------------Index----------------------------------------------------
 
 CREATE NONCLUSTERED INDEX CNI_1 ON Filmler
 (
@@ -180,15 +180,15 @@ EXECUTE sp_filmlerkayitekle
 EXECUTE sp_filmlerkayitekle
 'Baba','1972','9'
 EXECUTE sp_filmlerkayitekle
-'Kara Þovalye','2008','9'
+'Kara Ãžovalye','2008','9'
 EXECUTE sp_filmlerkayitekle
 '12 Ofkeli Adam','1957','9'
 EXECUTE sp_filmlerkayitekle
-'Sýký Dostlar','1990','8'
+'SÃ½kÃ½ Dostlar','1990','8'
 EXECUTE sp_filmlerkayitekle
-'Yýldýzlararasý','2014','8'
+'YÃ½ldÃ½zlararasÃ½','2014','8'
 EXECUTE sp_filmlerkayitekle
-'Yeþil Yol','1999','8'
+'YeÃ¾il Yol','1999','8'
 EXECUTE sp_filmlerkayitekle
 'Yedi','1995','8'
 EXECUTE sp_filmlerkayitekle
@@ -198,7 +198,7 @@ EXECUTE sp_filmlerkayitekle
 EXECUTE sp_filmlerkayitekle
 'Son Umut','2006','7'
 EXECUTE sp_filmlerkayitekle
-'Küçük Kadýnlar','2019','7'
+'KÃ¼Ã§Ã¼k KadÃ½nlar','2019','7'
 EXECUTE sp_filmlerkayitekle
 'Tenet','2020','7'
 
@@ -226,13 +226,13 @@ END
 EXECUTE sp_filmturlerkayitekle
 'Drama'
 EXECUTE sp_filmturlerkayitekle
-'Suç'
+'SuÃ§'
 EXECUTE sp_filmturlerkayitekle
 'Aksiyon'
 EXECUTE sp_filmturlerkayitekle
 'Drama'
 EXECUTE sp_filmturlerkayitekle
-'Suç'
+'SuÃ§'
 EXECUTE sp_filmturlerkayitekle
 'Bilimkurgu'
 EXECUTE sp_filmturlerkayitekle
@@ -340,3 +340,37 @@ EXECUTE sp_yoneticilerkayitekle
 
 
 SELECT * FROM Yoneticiler
+
+
+---------------------------------------------------------Stored Procedure(Index Rebuild)------------------------------------------------
+
+create procedure sp_RebuildingIndexes
+as
+declare @tableName sysname
+declare @indexName sysname
+declare @avgFragmentation float
+declare @statement nvarchar(200)
+declare index_cursor cursor for
+select object_name(a.object_id) TableName,
+b.Name IndexName,avg_fragmentation_in_percent from sys.dm_db_index_physical_stats(db_id(),null,null,null,null) a
+inner join sysindexes b on a.object_id=b.id and
+a.index_id=b.indid
+where left(name,1)<>'_' 
+open index_cursor
+fetch next from index_cursor into @tableName,@indexName,@avgFragmentation
+while @@fetch_status=0
+begin
+ if @avgFragmentation>=0
+       set @statement='alter index ' + @indexName + ' on ' + @tableName + ' rebuild '
+	   print @statement     
+    exec sp_executesql @statement
+ fetch next from index_cursor into @tableName,@indexName,@avgFragmentation
+end
+close index_cursor
+deallocate index_cursor
+
+
+
+
+execute sp_RebuildingIndexes
+
